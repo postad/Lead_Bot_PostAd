@@ -12,6 +12,18 @@ WELCOME_IMG_URL = "https://cdn.prod.website-files.com/68529250c93c3df9b3d2a728/6
 BACK_TO_CHANNEL_LINK = "https://t.me/rakbriut"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def has_channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # ...all your existing code...
+    await query.edit_message_text(
+        "✅ תודה על שיתוף הפרטים! צוות השיווק שלנו יחזור אליך בקרוב.\n\n"
+        "לחזרה אל ערוץ הפרסום:",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("חזור אל ערוץ הפרסום", url=BACK_TO_CHANNEL_LINK)]
+        ])
+    )
+    context.user_data.clear()  # Clear user data after submitting lead
+    return ConversationHandler.END
+
 #    await context.bot.send_photo(chat_id=update.effective_chat.id, photo=WELCOME_IMG_URL)
     await update.message.reply_text(
         "תודה שהתעניינת בפוסט-אד – פלטפורמת הפרסום המובילה בטלגרם לתוצאות מבוססות ביצועים.\n\n"
