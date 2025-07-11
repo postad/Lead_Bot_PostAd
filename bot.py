@@ -5,26 +5,17 @@ from telegram.ext import (
     ConversationHandler, filters, ContextTypes, CallbackQueryHandler
 )
 
+# שלבי שיחה
 (COMPANY, EMAIL, PHONE, HAS_CHANNEL) = range(4)
 
-ADMIN_CHANNEL = "@rakbriut"  # הערוץ החדש
-WELCOME_IMG_URL = "https://cdn.prod.website-files.com/68529250c93c3df9b3d2a728/685f20f981c6304043571f33_logo-svg.svg"
+ADMIN_CHANNEL = "@rakbriut"  # עדכן את שם הערוץ הרצוי
+WELCOME_IMG_URL = ""  # (כרגע ללא תמונה, תוכל להוסיף קישור ל-PNG/JPG במידת הצורך)
 BACK_TO_CHANNEL_LINK = "https://t.me/rakbriut"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-async def has_channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # ...all your existing code...
-    await query.edit_message_text(
-        "✅ תודה על שיתוף הפרטים! צוות השיווק שלנו יחזור אליך בקרוב.\n\n"
-        "לחזרה אל ערוץ הפרסום:",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("חזור אל ערוץ הפרסום", url=BACK_TO_CHANNEL_LINK)]
-        ])
-    )
-    context.user_data.clear()  # Clear user data after submitting lead
-    return ConversationHandler.END
-
-#    await context.bot.send_photo(chat_id=update.effective_chat.id, photo=WELCOME_IMG_URL)
+    context.user_data.clear()  # תמיד מנקה את הנתונים עבור כל התחלה חדשה
+    # אם תרצה להחזיר את שליחת התמונה, תוכל לבטל את ההערה בשורה הבאה:
+    # await context.bot.send_photo(chat_id=update.effective_chat.id, photo=WELCOME_IMG_URL)
     await update.message.reply_text(
         "תודה שהתעניינת בפוסט-אד – פלטפורמת הפרסום המובילה בטלגרם לתוצאות מבוססות ביצועים.\n\n"
         "אנא שתף/י מידע קצר:\n"
@@ -75,15 +66,17 @@ async def has_channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("חזור אל ערוץ הפרסום", url=BACK_TO_CHANNEL_LINK)]
         ])
     )
+    context.user_data.clear()  # מנקה נתונים אחרי כל ליד
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("בוט הופסק. יום נעים!")
+    context.user_data.clear()
     return ConversationHandler.END
 
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
-    print("TOKEN:", repr(token))  # לשורת דיבאג בלוג
+    print("TOKEN:", repr(token))
     if not token:
         print("שגיאה: לא הוגדר טוקן בוט. ודא שהגדרת TELEGRAM_BOT_TOKEN במשתני הסביבה!")
         exit(1)
