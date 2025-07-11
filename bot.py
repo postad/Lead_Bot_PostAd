@@ -17,7 +17,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # שליחת לוגו
     await context.bot.send_photo(
         chat_id=update.effective_chat.id,
-        photo="https://wlab.co.il/wp-content/uploads/2025/03/Dribbble-shot-HD-1.png"
+        photo="https://wlab.co.il/wp-content/uploads/2020/02/Wlab_landing_main-pic-new.jpg"
     )
     # הודעת פתיחה
     await update.message.reply_text(
