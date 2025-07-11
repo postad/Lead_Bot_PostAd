@@ -12,7 +12,7 @@ WELCOME_IMG_URL = "https://cdn.prod.website-files.com/68529250c93c3df9b3d2a728/6
 BACK_TO_CHANNEL_LINK = "https://t.me/rakbriut"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_photo(chat_id=update.effective_chat.id, photo=WELCOME_IMG_URL)
+#    await context.bot.send_photo(chat_id=update.effective_chat.id, photo=WELCOME_IMG_URL)
     await update.message.reply_text(
         "תודה שהתעניינת בפוסט-אד – פלטפורמת הפרסום המובילה בטלגרם לתוצאות מבוססות ביצועים.\n\n"
         "אנא שתף/י מידע קצר:\n"
