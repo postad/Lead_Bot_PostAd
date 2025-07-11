@@ -1,45 +1,75 @@
 import os
+import re
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler,
     ConversationHandler, filters, ContextTypes, CallbackQueryHandler
 )
 
-# שלבי שיחה
 (COMPANY, EMAIL, PHONE, HAS_CHANNEL) = range(4)
 
-ADMIN_CHANNEL = "@rakbriut"  # עדכן את שם הערוץ הרצוי
-WELCOME_IMG_URL = ""  # (כרגע ללא תמונה, תוכל להוסיף קישור ל-PNG/JPG במידת הצורך)
+ADMIN_CHANNEL = "@rakbriut"
+WELCOME_IMG_URL = "https://wlab.co.il/wp-content/uploads/2025/07/bot-cover.jpg"
 BACK_TO_CHANNEL_LINK = "https://t.me/rakbriut"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()  # תמיד מנקה את הנתונים עבור כל התחלה חדשה
-    # אם תרצה להחזיר את שליחת התמונה, תוכל לבטל את ההערה בשורה הבאה:
-    # await context.bot.send_photo(chat_id=update.effective_chat.id, photo=WELCOME_IMG_URL)
+    context.user_data.clear()
+    await context.bot.send_photo(
+        chat_id=update.effective_chat.id,
+        photo=WELCOME_IMG_URL
+    )
     await update.message.reply_text(
-        "תודה שהתעניינת בפוסט-אד – פלטפורמת הפרסום המובילה בטלגרם לתוצאות מבוססות ביצועים.\n\n"
-        "אנא שתף/י מידע קצר:\n"
-        "1. שם החברה"
+        "👋🏻 <b>ברוך/ה הבא/ה ל-PostAd!</b>\n"
+        "פלטפורמת הפרסום המובילה בטלגרם ללידים חכמים.\n\n"
+        "אנא השלם/י את הפרטים (1/4):\n"
+        "🏢 <b>שם החברה</b>",
+        parse_mode="HTML"
     )
     return COMPANY
 
 async def company(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["company"] = update.message.text
-    await update.message.reply_text("2. אימייל")
+    company_name = update.message.text.strip()
+    if not company_name or len(company_name) < 2:
+        await update.message.reply_text("❗️נא להכניס שם חברה תקין (לפחות 2 תווים):")
+        return COMPANY
+    context.user_data["company"] = company_name
+    await update.message.reply_text(
+        "📧 (2/4) <b>אימייל ליצירת קשר</b>",
+        parse_mode="HTML"
+    )
     return EMAIL
 
 async def email(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["email"] = update.message.text
-    await update.message.reply_text("3. מספר טלפון")
+    user_email = update.message.text.strip()
+    email_pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+    if not re.match(email_pattern, user_email) or len(user_email) > 100:
+        await update.message.reply_text(
+            "❗️כתובת אימייל לא תקינה. אנא נסה/י שוב:"
+        )
+        return EMAIL
+    context.user_data["email"] = user_email
+    await update.message.reply_text(
+        "📞 (3/4) <b>מספר טלפון</b>",
+        parse_mode="HTML"
+    )
     return PHONE
 
 async def phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["phone"] = update.message.text
+    phone = update.message.text.strip()
+    # אפשרות לולידציה בסיסית: 9-12 ספרות, רק מספרים (ישראל/בינ"ל)
+    if not re.match(r"^[\d\-\+ ]{8,14}$", phone):
+        await update.message.reply_text(
+            "❗️נא להכניס מספר טלפון תקין (רק ספרות, מינימום 8 תווים):"
+        )
+        return PHONE
+    context.user_data["phone"] = phone
     keyboard = [
-        [InlineKeyboardButton("כן", callback_data='yes'), InlineKeyboardButton("לא", callback_data='no')]
+        [InlineKeyboardButton("✅ כן", callback_data='yes'), InlineKeyboardButton("❌ לא", callback_data='no')]
     ]
     await update.message.reply_text(
-        "4. האם יש לחברה ערוץ טלגרם?", reply_markup=InlineKeyboardMarkup(keyboard)
+        "📢 (4/4) <b>האם יש לחברה ערוץ טלגרם?</b>",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(keyboard)
     )
     return HAS_CHANNEL
 
@@ -50,27 +80,29 @@ async def has_channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["has_channel"] = has_channel
 
     lead_text = (
-        "📥 ליד חדש מבוט PostAd:\n"
-        f"שם החברה: {context.user_data['company']}\n"
-        f"אימייל: {context.user_data['email']}\n"
-        f"טלפון: {context.user_data['phone']}\n"
-        f"האם יש ערוץ טלגרם: {context.user_data['has_channel']}\n"
-        f"טלגרם: @{query.from_user.username if query.from_user.username else '---'}"
+        "📥 <b>ליד חדש מבוט PostAd:</b>\n"
+        f"🏢 <b>שם החברה:</b> {context.user_data['company']}\n"
+        f"📧 <b>אימייל:</b> {context.user_data['email']}\n"
+        f"📞 <b>טלפון:</b> {context.user_data['phone']}\n"
+        f"📢 <b>האם יש ערוץ טלגרם:</b> {context.user_data['has_channel']}\n"
+        f"👤 <b>טלגרם:</b> @{query.from_user.username if query.from_user.username else '---'}"
     )
-    await context.bot.send_message(chat_id=ADMIN_CHANNEL, text=lead_text)
+    await context.bot.send_message(chat_id=ADMIN_CHANNEL, text=lead_text, parse_mode="HTML")
 
     await query.edit_message_text(
-        "✅ תודה על שיתוף הפרטים! צוות השיווק שלנו יחזור אליך בקרוב.\n\n"
-        "לחזרה אל ערוץ הפרסום:",
+        "✅ <b>תודה! הפרטים התקבלו בהצלחה.</b>\n"
+        "צוות השיווק שלנו יחזור אליך בקרוב.\n\n"
+        "🔗 לחזרה אל ערוץ הפרסום:",
+        parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("חזור אל ערוץ הפרסום", url=BACK_TO_CHANNEL_LINK)]
+            [InlineKeyboardButton("📣 מעבר לערוץ", url=BACK_TO_CHANNEL_LINK)]
         ])
     )
-    context.user_data.clear()  # מנקה נתונים אחרי כל ליד
+    context.user_data.clear()
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("בוט הופסק. יום נעים!")
+    await update.message.reply_text("❌ הפעולה בוטלה. יום נעים!")
     context.user_data.clear()
     return ConversationHandler.END
 
