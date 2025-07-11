@@ -14,18 +14,31 @@ BACK_TO_CHANNEL_LINK = "https://t.me/rakbriut"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
+    # שליחת לוגו
     await context.bot.send_photo(
         chat_id=update.effective_chat.id,
-        photo=WELCOME_IMG_URL
+        photo="https://wlab.co.il/wp-content/uploads/2025/03/Dribbble-shot-HD-1.png"
     )
+    # הודעת פתיחה
     await update.message.reply_text(
-        "👋🏻 <b>ברוך/ה הבא/ה ל-PostAd!</b>\n"
-        "פלטפורמת הפרסום המובילה בטלגרם ללידים חכמים.\n\n"
-        "אנא השלם/י את הפרטים (1/4):\n"
-        "🏢 <b>שם החברה</b>",
+        "היי! 👋\n"
+        "<b>נעים להכיר, אני הבוט של WLAB.</b>\n\n"
+        "🧬 <b>בדיקה אחת יכולה לשנות לכם את החיים –</b> אלפי לקוחות כבר שיפרו את התזונה וההרגשה שלהם בעזרתנו.\n\n"
+        "🔹 <b>התהליך פשוט מאוד:</b>\n"
+        "ממלאים כאן פרטים, ואנחנו שולחים לכם עלון מידע מסודר.\n"
+        "צוות האבחון שלנו ייצור אתכם קשר בהקדם לכל שאלה והתאמה אישית.\n\n"
+        "💡 <b>רוצים לקבל את כל הפרטים על הבדיקה?</b>\n"
+        "ממלאים טופס קצר ומתחילים 😊\n\n"
+        "<i>כל הפרטים נשמרים בפרטיות מלאה!</i>",
+        parse_mode="HTML"
+    )
+    # המשך לתהליך הליד
+    await update.message.reply_text(
+        "1️⃣ <b>שם מלא</b> (כדי שנדע איך לפנות אליך):",
         parse_mode="HTML"
     )
     return COMPANY
+
 
 async def company(update: Update, context: ContextTypes.DEFAULT_TYPE):
     company_name = update.message.text.strip()
