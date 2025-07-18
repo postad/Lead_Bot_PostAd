@@ -1,7 +1,7 @@
 import os
 import re
 import requests
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton # Added KeyboardButton
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler,
     ConversationHandler, filters, ContextTypes, CallbackQueryHandler
@@ -101,8 +101,8 @@ async def email(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return EMAIL # Stay in EMAIL state for re-entry
     context.user_data["email"] = user_email # Store as 'email' for CRM
 
-    # --- NEW: Offer 'Share Phone Number' button for better UX ---
-    keyboard = [[InlineKeyboardButton("📞 שיתוף מספר טלפון", request_contact=True)]]
+    # --- CORRECTED: Use KeyboardButton for request_contact ---
+    keyboard = [[KeyboardButton("📞 שיתוף מספר טלפון", request_contact=True)]]
     reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
     await update.message.reply_text(
