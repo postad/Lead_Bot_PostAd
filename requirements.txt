@@ -1,4 +1,4 @@
-beautifulsoup4
-requests
-python-telegram-bot>=20.0
-urllib3
+python-telegram-bot==21.1.1 # Or the specific version you prefer, check current stable
+requests==2.32.3 # Or the specific version you prefer, check current stable
+# If you're using python-dotenv for local testing with a .env file, include it:
+# python-dotenv==1.0.1
