@@ -111,7 +111,7 @@ async def phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Receives and validates the user's phone number, then asks about private insurance.
     """
-    phone_number = update.message.text.strip()
+    phone_number = update.message.text.strip() # Renamed variable to avoid conflict with function name
     # Flexible phone validation (8-14 digits, allows +, -, space)
     if not re.match(r"^[\d\-\+ ]{8,14}$", phone_number):
         await update.message.reply_text(
@@ -138,7 +138,7 @@ async def private_insurance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     pushes the lead data to CRM, sends confirmation, and ends the conversation.
     """
     query = update.callback_query
-    await query.answer() # Acknowledge the callback query
+    await query.answer() # Acknowledge the callback query to remove loading state from button
 
     # Map the callback_data to the CRM's expected value for 'ביטוח פרטי'
     # IMPORTANT: These string values MUST exactly match the options in your CRM's dropdown.
@@ -152,7 +152,7 @@ async def private_insurance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     scalla_public_id = os.getenv("SCALLA_PUBLIC_ID")
     if not scalla_public_id:
         print("שגיאה: משתנה סביבה SCALLA_PUBLIC_ID לא הוגדר!")
-        # Fallback for user or admin if public ID is missing (highly unlikely on Railway if set)
+        # Fallback message for user or admin if public ID is missing (highly unlikely on Railway if set)
         crm_success_message = "❌ שגיאה פנימית בבוט: מזהה CRM חסר."
     else:
         # Prepare lead data for CRM (keys must match CRM form field names)
@@ -179,13 +179,14 @@ async def private_insurance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
 
         # --- Push data to CRM ---
-        crm_success_message = ""
+        crm_success_message = "" # Initialize success message
         try:
             # Use 'data' parameter for form-urlencoded submission
             response = requests.post(CRM_API_URL, data=lead_data)
             response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
 
             # Check CRM API response (you might need to adjust based on Scalla's actual success response)
+            # Scalla CRM often returns a simple text response like "Success" or HTML indicating success
             if response.status_code == 200 and "success" in response.text.lower():
                 crm_success_message = "✅ הליד נשלח בהצלחה ל-CRM!"
             else:
@@ -263,6 +264,7 @@ def main():
             LAST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, last_name)],
             EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, email)],
             PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, phone)],
+            # FIX: Use CallbackQueryHandler for the inline buttons
             PRIVATE_INSURANCE: [CallbackQueryHandler(private_insurance)],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
