@@ -15,8 +15,6 @@ from telegram.ext import (
 ADMIN_CHANNEL = "@rakbriut"
 
 # URLs for images and channel links
-# This URL is defined but currently unused in the 'start' function.
-# WELCOME_IMG_URL = "https://wlab.co.il/wp-content/uploads/2025/07/bot-cover.jpg"
 BACK_TO_CHANNEL_LINK = "https://t.me/rakbriut"
 
 # CRM API Endpoint (Scalla CRM webform capture)
@@ -46,7 +44,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "ממלאים כאן פרטים, ואנחנו שולחים לכם עלון מידע מסודר.\n"
         "צוות האבחון שלנו ייצור אתכם קשר בהקדם לכל שאלה והתאמה אישית.\n\n"
         "💡 <b>רוצים לקבל את כל הפרטים על הבדיקה?</b>\n"
-        "ממלאים טופס קצר ומתחילים 😊\n\n"
+        "מממלאים טופס קצר ומתחילים 😊\n\n"
         "<i>כל הפרטים נשמרים בפרטיות מלאה!</i>",
         parse_mode="HTML"
     )
@@ -136,10 +134,8 @@ async def private_insurance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Handles the callback query for the private insurance question,
     pushes the lead data to CRM, sends confirmation, and ends the conversation.
-    Telegram-specific user profile data is excluded as per user request.
-    Includes debug prints for SCALLA_PUBLIC_ID and CRM API response.
+    Telegram-specific user profile data is excluded.
     """
-    print("DEBUG: Entered private_insurance function!") # Keep this for now for debugging
     query = update.callback_query
     await query.answer() # Acknowledge the callback query to remove loading state from button
 
@@ -152,14 +148,11 @@ async def private_insurance(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Retrieve CRM Public ID from environment variables
     scalla_public_id = os.getenv("SCALLA_PUBLIC_ID")
-    # --- NEW DEBUG LINE FOR SCALLA_PUBLIC_ID ---
-    print(f"DEBUG: Value of SCALLA_PUBLIC_ID received by os.getenv: '{scalla_public_id}'")
-    # --- END NEW DEBUG LINE ---
-
+    
     crm_success_message = "" # Initialize for scope
 
     if not scalla_public_id:
-        print("שגיאה: משתנה סביבה SCALLA_PUBLIC_ID לא הוגדר!")
+        print("שגיאה: משתנה סביבה SCALLA_PUBLIC_ID לא הוגדר!") # Keep this print for critical config error
         crm_success_message = "❌ שגיאה פנימית בבוט: מזהה CRM חסר. הליד לא נשלח ל-CRM."
     else:
         # Prepare lead data for CRM (keys must match CRM form field names)
@@ -180,23 +173,17 @@ async def private_insurance(update: Update, context: ContextTypes.DEFAULT_TYPE):
             response = requests.post(CRM_API_URL, data=lead_data)
             response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
 
-            # --- DEBUG LINES FOR CRM RESPONSE ---
-            print(f"DEBUG: CRM API Response Status: {response.status_code}")
-            print(f"DEBUG: CRM API Response Body: {response.text}")
-            # --- END DEBUG LINES ---
-
             # Check CRM API response (you might need to adjust based on Scalla's actual success response)
-            # Scalla CRM often returns a simple text response like "Success" or HTML indicating success
             if response.status_code == 200 and "success" in response.text.lower():
                 crm_success_message = "✅ הליד נשלח בהצלחה ל-CRM!"
             else:
                 crm_success_message = (f"⚠️ אירעה שגיאה בשליחת הליד ל-CRM. "
                                        f"סטטוס: {response.status_code}. "
                                        f"תגובה: {response.text[:200]}...") # Log first 200 chars of response
-                print(f"CRM API Error: {response.status_code} - {response.text}")
+                print(f"CRM API Error: {response.status_code} - {response.text}") # Keep this for CRM specific errors
         except requests.exceptions.RequestException as e:
             crm_success_message = f"❌ שגיאת תקשורת עם ה-CRM: {e}"
-            print(f"Error pushing lead to CRM: {e}")
+            print(f"Error pushing lead to CRM: {e}") # Keep this for network errors
 
     # Send lead details to the Admin Channel - simplified, no Telegram user data
     lead_text = (
@@ -257,7 +244,7 @@ def main():
             LAST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, last_name)],
             EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, email)],
             PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, phone)],
-            # FIX: Use CallbackQueryHandler for the inline buttons
+            # Correct handler for inline buttons
             PRIVATE_INSURANCE: [CallbackQueryHandler(private_insurance)],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
