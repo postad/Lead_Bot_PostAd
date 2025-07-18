@@ -1,7 +1,7 @@
 import os
 import re
 import requests
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler,
     ConversationHandler, filters, ContextTypes, CallbackQueryHandler
@@ -35,16 +35,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         photo="https://wlab.co.il/wp-content/uploads/2020/02/Wlab_landing_main-pic-new.jpg"
     )
 
-    # Send introductory text message
+    # Send introductory text message with updated description and emojis
     await update.message.reply_text(
         "היי! 👋\n"
         "<b>נעים להכיר, אני הבוט של WLAB.</b>\n\n"
-        "🧬 <b>בדיקה אחת יכולה לשנות לכם את החיים –</b> אלפי לקוחות כבר שיפרו את התזונה וההרגשה שלהם בעזרתנו.\n\n"
+        "🔬 <b>בדיקת דם לאי סבילות למזון (IgG) – בדיקה אחת שיכולה לשנות לכם את החיים!</b>\n"
+        "אלפי לקוחות כבר שיפרו את התזונה וההרגשה שלהם בעזרתנו.\n\n"
         "🔹 <b>התהליך פשוט מאוד:</b>\n"
         "ממלאים כאן פרטים, ואנחנו שולחים לכם עלון מידע מסודר.\n"
         "צוות האבחון שלנו ייצור אתכם קשר בהקדם לכל שאלה והתאמה אישית.\n\n"
         "💡 <b>רוצים לקבל את כל הפרטים על הבדיקה?</b>\n"
-        "מממלאים טופס קצר ומתחילים 😊\n\n"
+        "ממלאים טופס קצר ומתחילים 😊\n\n"
         "<i>כל הפרטים נשמרים בפרטיות מלאה!</i>",
         parse_mode="HTML"
     )
@@ -99,36 +100,51 @@ async def email(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return EMAIL # Stay in EMAIL state for re-entry
     context.user_data["email"] = user_email # Store as 'email' for CRM
+
+    # --- NEW: Offer 'Share Phone Number' button for better UX ---
+    keyboard = [[InlineKeyboardButton("📞 שיתוף מספר טלפון", request_contact=True)]]
+    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
+
     await update.message.reply_text(
-        "📞 4️⃣ <b>מספר טלפון:</b>", # Asking for phone
-        parse_mode="HTML"
+        "📞 4️⃣ <b>מספר טלפון:</b>\n"
+        "הדרך הקלה ביותר היא ללחוץ על הכפתור למטה כדי לשתף את מספר הטלפון שלך:",
+        parse_mode="HTML",
+        reply_markup=reply_markup
     )
     return PHONE # Transition to the PHONE state
 
 async def phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
-    Receives and validates the user's phone number, then asks about private insurance.
+    Receives and validates the user's phone number (either shared contact or manual input),
+    then asks about private insurance.
     """
-    phone_number = update.message.text.strip()
-    # Flexible phone validation (8-14 digits, allows +, -, space)
-    if not re.match(r"^[\d\-\+ ]{8,14}$", phone_number):
-        await update.message.reply_text(
-            "❗️נא להכניס מספר טלפון תקין (רק ספרות, מינימום 8 תווים):"
-        )
-        return PHONE # Stay in PHONE state for re-entry
-    context.user_data["mobile"] = phone_number # Store as 'mobile' for CRM
+    phone_number = None
+    if update.message.contact: # Check if a contact was shared
+        phone_number = update.message.contact.phone_number
+        await update.message.reply_text("✅ תודה! מספר הטלפון התקבל.", reply_markup=ReplyKeyboardRemove())
+    else: # Fallback for manual input or invalid input
+        phone_number = update.message.text.strip()
+        # Your existing phone validation logic here
+        if not re.match(r"^[\d\-\+ ]{8,14}$", phone_number):
+            await update.message.reply_text(
+                "❗️מספר טלפון לא תקין. אנא הכנס/י מספר תקין (רק ספרות, מינימום 8 תווים), או לחץ/י על כפתור השיתוף:"
+            )
+            return PHONE
+        await update.message.reply_text("✅ תודה! מספר הטלפון התקבל.", reply_markup=ReplyKeyboardRemove())
 
-    # Present inline keyboard for private insurance question
+    context.user_data["mobile"] = phone_number
+
+    # Then transition to the private insurance question with InlineKeyboard
     keyboard = [
         [InlineKeyboardButton("✅ יש לי ביטוח פרטי", callback_data='yes_private_insurance')],
         [InlineKeyboardButton("❌ אין לי ביטוח פרטי", callback_data='no_private_insurance')]
     ]
     await update.message.reply_text(
-        "5️⃣ <b>האם יש לך ביטוח פרטי?</b>", # Asking about private insurance
+        "5️⃣ <b>האם יש לך ביטוח פרטי?</b>",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
-    return PRIVATE_INSURANCE # Transition to the PRIVATE_INSURANCE state
+    return PRIVATE_INSURANCE
 
 async def private_insurance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -164,7 +180,6 @@ async def private_insurance(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "ביטוח פרטי": context.user_data['ביטוח פרטי'], # CRM field name as per screenshot
             "leadsource": "טלגרם", # Fixed value for the CRM's 'leadsource' field from screenshot
             "publicid": scalla_public_id, # The Public ID required by Scalla CRM
-            # Removed the 'description' field with Telegram user info as per your request
         }
 
         # --- Push data to CRM ---
@@ -243,7 +258,8 @@ def main():
             FIRST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, first_name)],
             LAST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, last_name)],
             EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, email)],
-            PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, phone)],
+            # Handle both text (for manual input) and contact (for shared contact)
+            PHONE: [MessageHandler(filters.TEXT | filters.CONTACT & ~filters.COMMAND, phone)],
             # Correct handler for inline buttons
             PRIVATE_INSURANCE: [CallbackQueryHandler(private_insurance)],
         },
